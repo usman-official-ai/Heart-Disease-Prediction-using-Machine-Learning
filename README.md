@@ -1,5 +1,9 @@
 ❤️ Heart Disease Prediction using Machine Learning
 
+<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/860c3115-4e89-4c4d-8e81-af9d633cf9ee" />
+
+
+
 📌 Overview
 Heart Disease Prediction is a machine learning-based system designed to analyze clinical and demographic data to predict the likelihood of cardiovascular disease. The project aims to assist in early diagnosis by leveraging data-driven insights, improving decision-making in healthcare environments.
 
@@ -119,14 +123,18 @@ Scikit-learn
 
 
 📂 Project Structure
-heart-disease-prediction/│├── data/                # Dataset files├── notebook.ipynb      # Model training & analysis├── requirements.txt    # Dependencies└── README.md           # Project documentation
+heart-disease-prediction/│├── data/               
+# Dataset files├── notebook.ipynb     
+# Model training & analysis├── requirements.txt 
+# Dependencies└── README.md          
+# Project documentation
 
-⚙️ Installation & Usage
-1️⃣ Clone the Repository
-git clone https://github.com/your-username/heart-disease-prediction.gitcd heart-disease-prediction
-2️⃣ Install Dependencies
-pip install -r requirements.txt
-3️⃣ Run the Project
+⚙️ Installation & Usage  
+1️⃣ Clone the Repository  
+git clone https://github.com/your-username/heart-disease-prediction.gitcd heart-disease-prediction  
+2️⃣ Install Dependencies  
+pip install -r requirements.txt  
+3️⃣ Run the Project  
 
 
 Open notebook.ipynb in Jupyter Notebook or Google Colab
@@ -159,7 +167,7 @@ Deep learning model experimentation
 Contributions are welcome!
 Feel free to fork this repository, improve it, and submit a pull request.
 
-👨‍💻 Author
+👨‍💻 Author  
 usman-official-ai
 
 
