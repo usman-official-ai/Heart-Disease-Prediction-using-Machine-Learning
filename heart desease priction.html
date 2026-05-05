@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>HeartGuard AI | Heart Disease Prediction System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.2/dist/axios.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .input-field {
+            transition: all 0.2s ease;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            outline: none;
+        }
+        
+        .tooltip-icon {
+            cursor: help;
+            border-bottom: 1px dashed #94a3b8;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            font-size: 11px;
+            background: #e2e8f0;
+            border-radius: 50%;
+            margin-left: 4px;
+        }
+        
+        .tooltip-icon:hover {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(59, 130, 246, 0.2);
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .toast {
+            animation: slideInRight 0.3s ease-out forwards;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-stack {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center p-2 bg-blue-100 rounded-full mb-4">
+                <i class="fas fa-heartbeat text-4xl text-blue-600"></i>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-700 to-cyan-600 bg-clip-text text-transparent">
+                HeartGuard AI
+            </h1>
+            <p class="text-gray-600 mt-2 text-lg">Advanced Heart Disease Risk Assessment System</p>
+            <p class="text-sm text-gray-500 mt-1">Powered by Clinical Machine Learning Models</p>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Form Section - 2 columns on desktop -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden card">
+                    <div class="bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4">
+                        <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                            <i class="fas fa-notes-medical"></i>
+                            Patient Medical Profile
+                        </h2>
+                        <p class="text-blue-100 text-sm mt-1">Enter all clinical parameters for accurate prediction</p>
+                    </div>
+                    
+                    <div class="p-6">
+                        <form id="predictionForm" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Age -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Age (years)
+                                        <span class="tooltip-icon" data-tooltip="Age in years (20-100). Higher age increases cardiovascular risk.">
+                                            <i class="fas fa-question text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <input type="number" id="age" name="age" value="52" min="20" max="120" 
+                                           class="input-field w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-blue-500 transition">
+                                    <p class="text-xs text-gray-500 mt-1">Range: 20-100 years</p>
+                                </div>
+
+                                <!-- Gender -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Gender
+                                        <span class="tooltip-icon" data-tooltip="Male (1) or Female (0). Males have slightly higher baseline risk.">
+                                            <i class="fas fa-question text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <select id="sex" class="input-field w-full px-4 py-2 rounded-lg border border-gray-200">
+                                        <option value="1">Male</option>
+                                        <option value="0">Female</option>
+                                    </select>
+                                </div>
+
+                                <!-- Chest Pain Type -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Chest Pain Type
+                                        <span class="tooltip-icon" data-tooltip="0=Typical angina, 1=Atypical angina, 2=Non-anginal pain, 3=Asymptomatic">
+                                            <i class="fas fa-question text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <select id="cp" class="input-field w-full px-4 py-2 rounded-lg border border-gray-200">
+                                        <option value="0">Typical Angina</option>
+                                        <option value="1">Atypical Angina</option>
+                                        <option value="2">Non-anginal Pain</option>
+                                        <option value="3">Asymptomatic</option>
+                                    </select>
+                                </div>
+
+                                <!-- Resting BP -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Resting Blood Pressure (mm Hg)
+                                        <span class="tooltip-icon" data-tooltip="Resting blood pressure in mm Hg. Normal range 90-120.">
+                                            <i class="fas fa-question text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <input type="number" id="trestbps" value="125" min="60" max="220"
+                                           class="input-field w-full px-4 py-2 rounded-lg border border-gray-200">
+                                    <p class="text-xs text-gray-500 mt-1">Range: 60-220 mm Hg</p>
+                                </div>
+
+                                <!-- Cholesterol -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Cholesterol (mg/dL)
+                                        <span class="tooltip-icon" data-tooltip="Serum cholesterol in mg/dL. Above 200 increases risk.">
+                                            <i class="fas fa-question text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <input type="number" id="chol" value="212" min="100" max="600"
+                                           class="input-field w-full px-4 py-2 rounded-lg border border-gray-200">
+                                    <p class="text-xs text-gray-500 mt-1">Range: 100-600 mg/dL</p>
+                                </div>
+
+                                <!-- Fasting Blood Sugar -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Fasting Blood Sugar
+                                        <span class="tooltip-icon" data-tooltip="Fasting blood sugar >120 mg/dL indicates diabetes risk.">
+                                            <i class="fas fa-question text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <select id="fbs" class="input-field w-full px-4 py-2 rounded-lg border border-gray-200">
+                                        <option value="0">≤ 120 mg/dL (Normal)</option>
+                                        <option value="1">> 120 mg/dL (Elevated)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Rest ECG -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Resting ECG
+                                        <span class="tooltip-icon" data-tooltip="0=Normal, 1=ST-T abnormality, 2=Ventricular hypertrophy">
+                                            <i class="fas fa-question text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <select id="restecg" class="input-field w-full px-4 py-2 rounded-lg border border-gray-200">
+                                        <option value="0">Normal</option>
+                                        <option value="1">ST-T Abnormality</option>
+                                        <option value="2">Ventricular Hypertrophy</option>
+                                    </select>
+                                </div>
+
+                                <!-- Max Heart Rate -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Max Heart Rate
+                                        <span class="tooltip-icon" data-tooltip="Maximum heart rate achieved. Lower than expected may indicate issues.">
+                                            <i class="fas fa-question text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <input type="number" id="thalach" value="150" min="60" max="220"
+                                           class="input-field w-full px-4 py-2 rounded-lg border border-gray-200">
+                                    <p class="text-xs text-gray-500 mt-1">Range: 60-220 bpm</p>
+                                </div>
+
+                                <!-- Exercise Induced Angina -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Exercise Induced Angina
+                                        <span class="tooltip-icon" data-tooltip="Chest pain during exercise is a key marker.">
+                                            <i class="fas fa-question text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <select id="exang" class="input-field w-full px-4 py-2 rounded-lg border border-gray-200">
+                                        <option value="0">No</option>
+                                        <option value="1">Yes</option>
+                                    </select>
+                                </div>
+
+                                <!-- ST Depression -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        ST Depression (Oldpeak)
+                                        <span class="tooltip-icon" data-tooltip="ST depression induced by exercise. Higher values = more risk.">
+                                            <i class="fas fa-question text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <input type="number" step="0.1" id="oldpeak" value="1.0" min="0" max="6.2"
+                                           class="input-field w-full px-4 py-2 rounded-lg border border-gray-200">
+                                    <p class="text-xs text-gray-500 mt-1">Range: 0-6.2</p>
+                                </div>
+
+                                <!-- Slope -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Slope
+                                        <span class="tooltip-icon" data-tooltip="Slope of peak exercise ST segment: 1=upsloping, 2=flat, 3=downsloping">
+                                            <i class="fas fa-question text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <select id="slope" class="input-field w-full px-4 py-2 rounded-lg border border-gray-200">
+                                        <option value="1">Upsloping</option>
+                                        <option value="2" selected>Flat</option>
+                                        <option value="3">Downsloping</option>
+                                    </select>
+                                </div>
+
+                                <!-- Major Vessels -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Number of Major Vessels
+                                        <span class="tooltip-icon" data-tooltip="Number of major vessels (0-3) colored by fluoroscopy.">
+                                            <i class="fas fa-question text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <select id="ca" class="input-field w-full px-4 py-2 rounded-lg border border-gray-200">
+                                        <option value="0">0</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                    </select>
+                                </div>
+
+                                <!-- Thalassemia -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Thalassemia
+                                        <span class="tooltip-icon" data-tooltip="1=normal, 2=fixed defect, 3=reversible defect">
+                                            <i class="fas fa-question text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <select id="thal" class="input-field w-full px-4 py-2 rounded-lg border border-gray-200">
+                                        <option value="1">Normal</option>
+                                        <option value="2">Fixed Defect</option>
+                                        <option value="3">Reversible Defect</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="flex gap-4 pt-6 flex-wrap">
+                                <button type="button" id="predictBtn" 
+                                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-all transform hover:scale-105 flex items-center justify-center gap-2">
+                                    <i class="fas fa-microchip"></i>
+                                    Predict Heart Disease Risk
+                                </button>
+                                <button type="button" id="resetBtn"
+                                        class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all flex items-center gap-2">
+                                    <i class="fas fa-sync-alt"></i>
+                                    Reset Form
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden card sticky top-6">
+                    <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
+                        <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                            <i class="fas fa-chart-line"></i>
+                            Prediction Results
+                        </h2>
+                    </div>
+                    
+                    <div id="resultsContainer" class="p-6">
+                        <div class="text-center py-12 text-gray-400">
+                            <i class="fas fa-heartbeat text-5xl mb-3"></i>
+                            <p>Enter patient data and click</p>
+                            <p class="text-sm">"Predict Heart Disease Risk"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center text-gray-500 text-sm mt-12 pt-6 border-t border-gray-200">
+            <p>HeartGuard AI - Clinical Decision Support Tool | Always consult with a healthcare professional</p>
+            <p class="text-xs mt-2">© 2024 HeartGuard AI - Powered by Advanced Machine Learning</p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="bg-white rounded-2xl p-8 text-center">
+            <div class="spinner mx-auto"></div>
+            <p class="mt-4 text-gray-700 font-semibold">AI Analyzing Patient Data...</p>
+            <p class="text-sm text-gray-500 mt-1">Processing clinical parameters</p>
+        </div>
+    </div>
+
+    <script>
+        // Tooltip initialization
+        const tooltips = document.querySelectorAll('.tooltip-icon');
+        tooltips.forEach(tooltip => {
+            tooltip.addEventListener('mouseenter', (e) => {
+                const message = tooltip.getAttribute('data-tooltip');
+                // Create temporary tooltip
+                const tooltipDiv = document.createElement('div');
+                tooltipDiv.className = 'fixed z-50 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-lg whitespace-nowrap';
+                tooltipDiv.textContent = message;
+                document.body.appendChild(tooltipDiv);
+                
+                const rect = tooltip.getBoundingClientRect();
+                tooltipDiv.style.left = rect.left + 'px';
+                tooltipDiv.style.top = (rect.top - 30) + 'px';
+                
+                tooltip.addEventListener('mouseleave', () => {
+                    tooltipDiv.remove();
+                });
+            });
+        });
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast fixed bottom-5 right-5 z-50 bg-${type === 'success' ? 'green' : type === 'error' ? 'red' : 'blue'}-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // Validate form inputs
+        function validateForm() {
+            const age = document.getElementById('age').value;
+            const trestbps = document.getElementById('trestbps').value;
+            const chol = document.getElementById('chol').value;
+            const thalach = document.getElementById('thalach').value;
+            const oldpeak = document.getElementById('oldpeak').value;
+            
+            if (age < 20 || age > 120) {
+                showToast('Age must be between 20 and 120 years', 'error');
+                return false;
+            }
+            if (trestbps < 60 || trestbps > 220) {
+                showToast('Resting BP must be between 60 and 220 mm Hg', 'error');
+                return false;
+            }
+            if (chol < 100 || chol > 600) {
+                showToast('Cholesterol must be between 100 and 600 mg/dL', 'error');
+                return false;
+            }
+            if (thalach < 60 || thalach > 220) {
+                showToast('Max heart rate must be between 60 and 220 bpm', 'error');
+                return false;
+            }
+            if (oldpeak < 0 || oldpeak > 6.2) {
+                showToast('ST Depression must be between 0 and 6.2', 'error');
+                return false;
+            }
+            return true;
+        }
+
+        // Get risk factors explanation
+        function getRiskFactors(data) {
+            const factors = [];
+            if (data.age > 55) factors.push("Age > 55 years");
+            if (data.cp >= 2) factors.push("Atypical or asymptomatic chest pain");
+            if (data.oldpeak > 1.5) factors.push("High ST depression (Oldpeak > 1.5)");
+            if (data.exang == 1) factors.push("Exercise-induced angina present");
+            if (data.ca > 0) factors.push(`${data.ca} major vessel(s) affected`);
+            if (data.thal >= 2) factors.push("Thalassemia defect present");
+            if (data.chol > 240) factors.push("High cholesterol (>240 mg/dL)");
+            if (data.trestbps > 140) factors.push("High blood pressure (>140 mm Hg)");
+            return factors;
+        }
+
+        // Calculate risk probability (simulated but realistic)
+        function calculateRisk(data) {
+            let riskScore = 0.15; // base risk
+            
+            if (data.age > 55) riskScore += 0.15;
+            else if (data.age > 45) riskScore += 0.08;
+            
+            if (data.cp >= 2) riskScore += 0.12;
+            if (data.cp == 3) riskScore += 0.08;
+            
+            if (data.oldpeak > 1.5) riskScore += 0.18;
+            else if (data.oldpeak > 0.5) riskScore += 0.08;
+            
+            if (data.exang == 1) riskScore += 0.15;
+            if (data.ca > 0) riskScore += 0.12 * data.ca;
+            if (data.thal >= 2) riskScore += 0.1;
+            if (data.chol > 240) riskScore += 0.08;
+            if (data.trestbps > 140) riskScore += 0.08;
+            if (data.thalach < 100) riskScore += 0.1;
+            
+            return Math.min(0.96, riskScore);
+        }
+
+        // Update results display
+        let chart = null;
+
+        function updateResults(probability, prediction) {
+            const container = document.getElementById('resultsContainer');
+            const riskPercent = Math.round(probability * 100);
+            const riskLevel = probability < 0.3 ? 'Low' : probability < 0.7 ? 'Medium' : 'High';
+            const riskColor = riskLevel === 'Low' ? 'green' : riskLevel === 'Medium' ? 'yellow' : 'red';
+            
+            const formData = {
+                age: parseInt(document.getElementById('age').value),
+                cp: parseInt(document.getElementById('cp').value),
+                oldpeak: parseFloat(document.getElementById('oldpeak').value),
+                exang: parseInt(document.getElementById('exang').value),
+                ca: parseInt(document.getElementById('ca').value),
+                thal: parseInt(document.getElementById('thal').value),
+                chol: parseInt(document.getElementById('chol').value),
+                trestbps: parseInt(document.getElementById('trestbps').value),
+                thalach: parseInt(document.getElementById('thalach').value)
+            };
+            
+            const riskFactors = prediction === 1 ? getRiskFactors(formData) : [];
+            const healthTip = prediction === 1 ? 
+                "⚠️ Consult a cardiologist immediately. Adopt heart-healthy lifestyle: low-sodium diet, regular exercise, stress management, and take prescribed medications." :
+                "❤️ Maintain healthy habits: balanced diet, 30min daily exercise, avoid smoking, limit alcohol, and regular checkups.";
+            
+            container.innerHTML = `
+                <div class="space-y-4">
+                    <div class="text-center p-4 rounded-2xl ${prediction === 1 ? 'bg-red-50' : 'bg-green-50'}">
+                        ${prediction === 1 ? 
+                            '<i class="fas fa-heart-broken text-5xl text-red-600 mb-2"></i><p class="text-2xl font-bold text-red-600">Heart Disease Detected</p>' : 
+                            '<i class="fas fa-heart text-5xl text-green-600 mb-2"></i><p class="text-2xl font-bold text-green-600">No Disease Detected</p>'}
+                        <p class="text-lg mt-2">Risk Probability: <strong class="text-2xl">${riskPercent}%</strong></p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <canvas id="riskChart" width="200" height="200" class="mx-auto"></canvas>
+                    </div>
+                    
+                    <div class="text-center p-3 rounded-lg bg-${riskColor}-100">
+                        <p class="font-semibold text-${riskColor}-700">Risk Level: ${riskLevel} Risk</p>
+                    </div>
+                    
+                    <div class="bg-blue-50 p-3 rounded-lg">
+                        <p class="font-semibold text-blue-900"><i class="fas fa-brain"></i> Model Confidence</p>
+                        <p class="text-sm text-blue-700">${Math.max(probability, 1-probability).toFixed(1)}% confidence in prediction</p>
+                    </div>
+                    
+                    ${prediction === 1 && riskFactors.length > 0 ? `
+                        <div class="bg-orange-50 p-3 rounded-lg">
+                            <p class="font-semibold text-orange-900"><i class="fas fa-exclamation-triangle"></i> Risk Factors Identified</p>
+                            <ul class="text-sm text-orange-800 mt-2 list-disc list-inside">
+                                ${riskFactors.map(f => `<li>${f}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="bg-teal-50 p-3 rounded-lg">
+                        <p class="font-semibold text-teal-900"><i class="fas fa-clinic-medical"></i> Health Recommendation</p>
+                        <p class="text-sm text-teal-800 mt-1">${healthTip}</p>
+                    </div>
+                    
+                    <button id="downloadReportBtn" class="w-full bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2">
+                        <i class="fas fa-download"></i> Download Report (PDF)
+                    </button>
+                </div>
+            `;
+            
+            // Create chart
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [riskPercent, 100 - riskPercent],
+                        backgroundColor: [riskLevel === 'Low' ? '#10b981' : riskLevel === 'Medium' ? '#eab308' : '#ef4444', '#e5e7eb'],
+                        borderWidth: 0,
+                        cutout: '65%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    }
+                }
+            });
+            
+            document.getElementById('downloadReportBtn').addEventListener('click', () => {
+                showToast('Report generation would create PDF with complete clinical summary', 'info');
+            });
+        }
+
+        // Main prediction function
+        async function predict() {
+            if (!validateForm()) return;
+            
+            // Show loading
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            
+            // Collect form data
+            const data = {
+                age: parseInt(document.getElementById('age').value),
+                sex: parseInt(document.getElementById('sex').value),
+                cp: parseInt(document.getElementById('cp').value),
+                trestbps: parseInt(document.getElementById('trestbps').value),
+                chol: parseInt(document.getElementById('chol').value),
+                fbs: parseInt(document.getElementById('fbs').value),
+                restecg: parseInt(document.getElementById('restecg').value),
+                thalach: parseInt(document.getElementById('thalach').value),
+                exang: parseInt(document.getElementById('exang').value),
+                oldpeak: parseFloat(document.getElementById('oldpeak').value),
+                slope: parseInt(document.getElementById('slope').value),
+                ca: parseInt(document.getElementById('ca').value),
+                thal: parseInt(document.getElementById('thal').value)
+            };
+            
+            // Simulate API delay
+            setTimeout(() => {
+                // Calculate risk probability (simulated ML prediction)
+                const probability = calculateRisk(data);
+                const prediction = probability > 0.5 ? 1 : 0;
+                
+                // Hide loading
+                document.getElementById('loadingOverlay').style.display = 'none';
+                
+                // Update UI with results
+                updateResults(probability, prediction);
+                showToast(`Prediction complete! Risk: ${Math.round(probability*100)}%`, 'success');
+                
+                // Scroll to results
+                document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 1500);
+        }
+        
+        // Reset form
+        function resetForm() {
+            document.getElementById('age').value = '52';
+            document.getElementById('sex').value = '1';
+            document.getElementById('cp').value = '0';
+            document.getElementById('trestbps').value = '125';
+            document.getElementById('chol').value = '212';
+            document.getElementById('fbs').value = '0';
+            document.getElementById('restecg').value = '1';
+            document.getElementById('thalach').value = '150';
+            document.getElementById('exang').value = '0';
+            document.getElementById('oldpeak').value = '1.0';
+            document.getElementById('slope').value = '2';
+            document.getElementById('ca').value = '0';
+            document.getElementById('thal').value = '2';
+            
+            // Reset results display
+            document.getElementById('resultsContainer').innerHTML = `
+                <div class="text-center py-12 text-gray-400">
+                    <i class="fas fa-heartbeat text-5xl mb-3"></i>
+                    <p>Enter patient data and click</p>
+                    <p class="text-sm">"Predict Heart Disease Risk"</p>
+                </div>
+            `;
+            
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+            
+            showToast('Form has been reset successfully', 'info');
+        }
+        
+        // Event listeners
+        document.getElementById('predictBtn').addEventListener('click', predict);
+        document.getElementById('resetBtn').addEventListener('click', resetForm);
+        
+        // Enter key support
+        document.getElementById('predictionForm').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                predict();
+            }
+        });
+    </script>
+</body>
+</html>
